@@ -1,8 +1,10 @@
 from flask import Blueprint,current_app,jsonify,request
 
 from app.errors import SurveyProblem
-from app.modules.ledger.service import archive
+from app.modules.ledger.service import archive, replay
 from app.modules.release.service import release
+from app.modules.release.withdraw import withdraw
+from app.modules.returns.scrub import guarded
 from app.pipeline import STAGES,run
 from app.source import sources
 
@@ -21,7 +23,7 @@ def inspect(stage):
         result=storage().read(request.args['run'])[2]
     else:
         body=request.get_json(silent=True) if request.method=='POST' else {'sample':request.args.get('sample','dirty')}
-        result=run(sources(body),stage)
+        result=run(guarded(sources(body),storage().withdrawn()),stage)
     return jsonify(result[stage])
 
 
@@ -44,12 +46,24 @@ def get_run(key):
 
 @survey.post('/runs/<key>/rerun')
 def rerun(key):
-    manifest,tables,_=storage().read(key)
-    return jsonify(archive(storage(),tables,manifest))
+    return jsonify(replay(storage(),key))
 
 
 @survey.get('/export/<key>')
 def export(key):
-    response=jsonify(release(*storage().read(key)))
+    response=jsonify(release(*storage().read(key),receipts=storage().receipts(key)))
     response.headers['Content-Disposition']=f'attachment; filename="survey-{key[:12]}.json"'
     return response
+
+
+@survey.get('/withdrawals')
+def list_withdrawals():
+    return jsonify(tickets=sorted(storage().withdrawn()))
+
+
+@survey.post('/withdrawals')
+def new_withdrawal():
+    body=request.get_json(silent=True)
+    ticket=body.get('ticket') if isinstance(body,dict) else None
+    out=withdraw(storage(),ticket)
+    return jsonify(out), 200 if out['reused'] else 201

@@ -6,6 +6,7 @@ from app.api import storage
 from app.config import CHOICES, SPEC
 from app.errors import SurveyProblem
 from app.modules.release.service import release
+from app.modules.returns.scrub import guarded
 from app.pipeline import run
 from app.reasons import REASONS
 from app.source import sources
@@ -30,14 +31,15 @@ def desk(tab='balance'):
     if key:
         manifest, tables, result = storage().read(key)
     else:
-        tables = sources({'sample':sample})
+        tables = guarded(sources({'sample':sample}),storage().withdrawn())
         result = run(tables)
     layer = request.args.get('layer') or next(iter(result['frame']['population']))
     if layer not in result['frame']['population']:
         raise SurveyProblem('NO_LAYER','找不到该分层',404)
-    proof = release(manifest,tables,result) if manifest and tab=='release' else None
+    proof = release(manifest,tables,result,storage().receipts(key)) if manifest and tab=='release' else None
     shifts = [float(abs(Fraction(row['shift_pp']))) for row in result['balance']['bias'].values() if row['shift_pp'] is not None]
     scale = max([5, *(5 * (int(value / 5) + 1) for value in shifts)])
     return render_template('base.html',tab=tab,tabs=TABS,sample=sample,key=key,manifest=manifest,data=result,layer=layer,
                            spec=SPEC,choices=CHOICES,reasons=REASONS,decimal=decimal_text,maximum=scale,
-                           fraction=Fraction, proof=proof, recent=storage().recent() if tab=='archive' else [])
+                           fraction=Fraction, proof=proof, recent=storage().recent() if tab=='archive' else [],
+                           withdrawn=sorted(storage().withdrawn()) if tab=='release' else [])

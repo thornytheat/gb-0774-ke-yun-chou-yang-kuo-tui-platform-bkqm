@@ -15,4 +15,6 @@
 
 `GET /api/survey/<stage>` 执行样例阶段，阶段名见 [DEPTH](docs/DEPTH.md)。向同一路径 POST `{"tables":{"returns":"...","frame":"..."}}` 可复核自己的 CSV。`POST /api/runs` 提交同样的 `tables` 或 `{"sample":"dirty"}`。`GET /api/runs/<id>` 查档，`POST /api/runs/<id>/rerun` 复算，`GET /api/export/<id>` 领取证据。
 
+乘客获准撤回时 POST `/api/withdrawals` 提交 `{"ticket":"00011"}`：该票答案从收存原件与历次留档永久清除，各批剔除后重算留档；签发页与证据包仍核验撤回前签发摘要（旧签），并展示剔除后重算人数。撤回票登记在册，晚到补访不再入样；同一票重复撤回返回原记录，不新增签发。`GET /api/withdrawals` 查撤回名单。
+
 字段和计算规则详见 [数据字典](docs/DATA-DICTIONARY.md)。本机测试执行 `python -m pytest -q`。

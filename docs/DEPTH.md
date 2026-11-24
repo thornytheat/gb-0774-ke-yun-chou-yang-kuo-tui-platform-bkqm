@@ -11,6 +11,7 @@
 | M5 层级偏差对账 | 核算人口、回收行和百分点 | `/api/survey/balance` | `app/modules/balance/service.py` `app/modules/balance/shares.py` | `tests/test_balance.py` |
 | M6 批次留档复跑 | 事务留档及同源复算 | `/api/runs` | `app/modules/ledger/storage.py` `app/modules/ledger/service.py` | `tests/test_archive.py` |
 | M7 样本证据签发 | 按原件和结果摘要签发 | `/api/export/<id>` | `app/modules/release/audit.py` `app/modules/release/service.py` | `tests/test_release.py` |
+| M8 乘客撤回登记 | 清除撤回票并重算留档、回执链核验旧签 | `/api/withdrawals` | `app/modules/release/withdraw.py` `app/modules/returns/scrub.py` | `tests/test_withdraw.py` |
 
 ## 陷阱登记
 
